@@ -1,0 +1,7 @@
+[package]
+name = "safecs"
+version = "0.1.0"
+authors = ["BoxyUwU"]
+edition = "2018"
+
+[dependencies]
