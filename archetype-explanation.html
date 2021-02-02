@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Chapter 1 - entity-component-scrapyard</title>
+        <title>What are archetypes? - entity-component-scrapyard</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="chapter_1.html" class="active"><strong aria-hidden="true">1.</strong> Chapter 1</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="archetype-explanation.html" class="active"><strong aria-hidden="true">2.</strong> What are archetypes?</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,12 +163,61 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#chapter-1" id="chapter-1">Chapter 1</a></h1>
+                        <h1><a class="header" href="#what-are-archetypes" id="what-are-archetypes">What are archetypes?</a></h1>
+<p>Great question, and very necessary to understand before we write an archetype based ECS lol</p>
+<p>Note: for this section when you read something like &quot;an entity <code>[T, T1, T2]</code>&quot; it means that the entity has components of type <code>T1</code>, <code>T2</code> and <code>T3</code> and *nothing else*, if there's no square brackets it means the entity has those components and maybe more</p>
+<p>One of the things we *really* want out of our ECS is being able to iterate really fast since that's the primary way of using it. This is where archetypes come in, an archetype is a pool of entities that all have the same set of components, e.g. all entities with <code>[T1, T2]</code> will be stored in one archetype and all entities with <code>[T1, T3]</code> in another</p>
+<p>What this lets us do is that an archetype that stores components <code>[T, T1]</code> can (in psuedocode) look something like:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct Archetype {
+    t_components: Vec&lt;T&gt;,
+    t1_components: Vec&lt;T1&gt;,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Both of the <code>Vec</code>s will be the same length since we *only* store entities with <code>[T, T1]</code> components in this archetype. We also make sure the that the components at each index in the <code>Vec</code>s correspond to the same entity. e.g.</p>
+<p><code>t_components[0]</code> and <code>t1_components[0]</code> would be the components for the first entity stored in this archetype,
+<code>t_components[1]</code> and <code>t1_components[1]</code> for the second entitiy stored in this archetype etc</p>
+<p>What this means is that when we want to iterate all entities that have <code>T</code> and <code>T1</code> components we can find this archetype (and other archetypes that have a <code>Vec&lt;T&gt;</code> and <code>Vec&lt;T1&gt;</code>) and then return all the components we are interested in by just blindly iterating both <code>Vec</code>s. This is super fast because all our components are all lined up in contiguous blocks and we never have to skip any which minimises branching and allows for good cache usage</p>
+<p>To expand on the &quot;and other archetypes&quot; comment a bit, an entity with components <code>[T, T1, T2]</code> would *not* have its components stored in this archetype, its component would be stored in something like this (psuedocode)</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct OtherArchetype {
+    t_components: Vec&lt;T&gt;,
+    t1_components: Vec&lt;T1&gt;,
+    t2_components: Vec&lt;T2&gt;,
+} 
+<span class="boring">}
+</span></code></pre></pre>
+<p>This makes the general overview for the implementation of query's in an archetype ecs look something like:</p>
+<ul>
+<li>Try find an archetype that stores the components we are interested in</li>
+<li>If we can find one:
+<ul>
+<li>Create iterators over the relevent component <code>Vec</code>s </li>
+<li>Call next() repeatedly on said iterators until they are finished</li>
+<li>Go back to step #1</li>
+</ul>
+</li>
+<li>Else:
+<ul>
+<li>Our query has finished :)</li>
+</ul>
+</li>
+</ul>
+<p>So far archetypes sound pretty good performance wise right? well they have a big downside which is that adding and removing components from entities is **slow**, like *really* slow. If we take the previous example of an entity with components <code>[T, T1, T2]</code> if we wanted to remove component <code>T2</code> and keep our amazing iteration performance we need to remove all three components from the <code>[T, T1, T2]</code> archetype and and then copy <code>T</code> and <code>T1</code> into the <code>[T, T1]</code> archetype. This is way expensive, and is why you will often see people *heavily* cautioning against performing component add/removes with archetype ECS', bevy (a rust game engine) is even going as far as to <a href="https://www.google.com">add an alternative component storage</a> in addition to archetypes just to allow for opt-in faster add/removes for specified component types.  </p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
                         
 
                         
@@ -179,6 +228,10 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
                 
 
                 
