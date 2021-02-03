@@ -3,9 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>entity-component-scrapyard</title>
-        
-        <meta name="robots" content="noindex" />
+        <title>Entities - entity-component-scrapyard</title>
         
         
 
@@ -20,28 +18,28 @@
         <meta name="theme-color" content="#ffffff" />
 
         
-        <link rel="icon" href="favicon.svg">
+        <link rel="icon" href="../favicon.svg">
         
         
-        <link rel="shortcut icon" href="favicon.png">
+        <link rel="shortcut icon" href="../favicon.png">
         
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
         
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="stylesheet" href="../css/print.css" media="print">
         
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
         
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         
@@ -51,7 +49,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -97,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Entities/entities.html"><strong aria-hidden="true">2.</strong> Entities</a></li><li class="chapter-item expanded "><a href="archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../Entities/entities.html" class="active"><strong aria-hidden="true">2.</strong> Entities</a></li><li class="chapter-item expanded "><a href="../archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -133,7 +131,7 @@
 
                     <div class="right-buttons">
                         
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         
@@ -165,19 +163,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#entity-component-scrapyard-introduction" id="entity-component-scrapyard-introduction">Entity Component Scrapyard: Introduction</a></h1>
-<p>Hiiii person reading this. </p>
-<p>EC-Scrapyard is a tutorial walkthrough thingy where we're going to write an ECS from scratch :3</p>
-<p>This book is written with the assumption that the reader knows what an ECS is but not necessarily how it works or how to go about writing one. If
-you dont know what an ECS is there's a good writeup <a href="https://www.google.com">here</a></p>
-<p>A few caveats before we start:</p>
-<ul>
-<li>We wont be using any dependencies, we will be using rust's standard library though :&quot;)</li>
-<li>We will only use safe code so <code>#![forbid(unsafe_code)]</code> will be placed at the top of <code>lib.rs</code></li>
-<li>We wont touch on the Systems part of ECS because I personally feel that's better left to engines and users of the ECS to decide how best to structure the program</li>
-</ul>
-<p>A lot of the ECS' in the rust ecosystem use something called 'archetypes' so we'll be writing an archetype based ECS in this book. If you dont know what archetypes are don't worry they'll be explained later on in the book when we get around to implementing them :) If you're impatient and want to look at it now you can go ahead and do that :P <a href="./archetype-explanation">the section for that is here</a></p>
-<h1><a class="header" href="#entities" id="entities">Entities</a></h1>
+                        <h1><a class="header" href="#entities" id="entities">Entities</a></h1>
 <p>Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and hopefully we wont have to touch the more complicated stuff like query's or archetypes when we do this...</p>
 <p>An entity in an ECS doesn't store any data it's effectively just a handle to some data stored in the ECS. A simple way to implement this would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.</p>
 <pre><code class="language-rust noplaypen">pub struct Entity(u64);
@@ -394,53 +380,21 @@ fn main() {
 }
 </code></pre></pre>
 <p>And there we go both of those problems are solved now... We should probably write some tests to see if this all works huh</p>
-<h1><a class="header" href="#what-are-archetypes" id="what-are-archetypes">What are archetypes?</a></h1>
-<p>Great question, and very necessary to understand before we write an archetype based ECS lol</p>
-<p>Note: There are lots of ways to make an ECS so you will likely come across ECS' that dont use archetypes *but* hopefully by the
-end of this chapter when you see someone talk about archetype ECS' you'll understand what they mean. </p>
-<p>Note: for this section when you read something like &quot;an entity <code>[T, T1, T2]</code>&quot; it means that the entity has components of type <code>T1</code>, <code>T2</code> and <code>T3</code> and *nothing else*, if there's no square brackets it means the entity has those components and maybe more</p>
-<p>One of the things we *really* want out of our ECS is being able to iterate really fast since that's the primary way of using it. This is where archetypes come in, an archetype is a pool of entities that all have the same set of components, e.g. all entities with <code>[T1, T2]</code> will be stored in one archetype and all entities with <code>[T1, T3]</code> in another</p>
-<p>What this lets us do is that an archetype that stores components <code>[T, T1]</code> can (in psuedocode) look something like:</p>
-<pre><code class="language-rust noplaypen">struct Archetype {
-    t_components: Vec&lt;T&gt;,
-    t1_components: Vec&lt;T1&gt;,
-}
-</code></pre>
-<p>Both of the <code>Vec</code>s will be the same length since we *only* store entities with <code>[T, T1]</code> components in this archetype. We also make sure the that the components at each index in the <code>Vec</code>s correspond to the same entity. e.g.</p>
-<p><code>t_components[0]</code> and <code>t1_components[0]</code> would be the components for the first entity stored in this archetype,
-<code>t_components[1]</code> and <code>t1_components[1]</code> for the second entitiy stored in this archetype etc</p>
-<p>What this means is that when we want to iterate all entities that have <code>T</code> and <code>T1</code> components we can find this archetype (and other archetypes that have a <code>Vec&lt;T&gt;</code> and <code>Vec&lt;T1&gt;</code>) and then return all the components we are interested in by just blindly iterating both <code>Vec</code>s. This is super fast because all our components are all lined up in contiguous blocks and we never have to skip any which minimises branching and allows for good cache usage</p>
-<p>To expand on the &quot;and other archetypes&quot; comment a bit, an entity with components <code>[T, T1, T2]</code> would *not* have its components stored in this archetype, its component would be stored in something like this (psuedocode)</p>
-<pre><code class="language-rust noplaypen">struct OtherArchetype {
-    t_components: Vec&lt;T&gt;,
-    t1_components: Vec&lt;T1&gt;,
-    t2_components: Vec&lt;T2&gt;,
-} 
-</code></pre>
-<p>This makes the general overview for the implementation of query's in an archetype ecs look something like:</p>
-<ul>
-<li>Try find an archetype that stores the components we are interested in</li>
-<li>If we can find one:
-<ul>
-<li>Create iterators over the relevent component <code>Vec</code>s </li>
-<li>Call next() repeatedly on said iterators until they are finished</li>
-<li>Go back to step #1</li>
-</ul>
-</li>
-<li>Else:
-<ul>
-<li>Our query has finished :)</li>
-</ul>
-</li>
-</ul>
-<p>So far archetypes sound pretty good performance wise right? well they have a big downside which is that adding and removing components from entities is **slow**, like *really* slow. If we take the previous example of an entity with components <code>[T, T1, T2]</code> if we wanted to remove component <code>T2</code> and keep our amazing iteration performance we need to remove all three components from the <code>[T, T1, T2]</code> archetype and and then copy <code>T</code> and <code>T1</code> into the <code>[T, T1]</code> archetype. This is way expensive, and is why you will often see people *heavily* cautioning against performing component add/removes with archetype ECS', bevy (a rust game engine) is even going as far as to <a href="https://www.google.com">add an alternative component storage</a> in addition to archetypes just to allow for opt-in faster add/removes for specified component types.  </p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="../introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
+                        
+                            <a rel="next" href="../archetype-explanation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -450,7 +404,15 @@ end of this chapter when you see someone talk about archetype ECS' you'll unders
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="../introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
+                
+                    <a rel="next" href="../archetype-explanation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 
@@ -471,26 +433,18 @@ end of this chapter when you see someone talk about archetype ECS' you'll unders
         
 
         
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
         
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
         
 
-        
-        
-        <script type="text/javascript">
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
-        
         
 
     </body>
