@@ -96,7 +96,8 @@ fn main() {
         // Spawn the same entity from a second generator
         # Entity(0) // haha ur so sneaky hi
     };
-    assert!(statuses.is_alive(1, e1_2));
+    statuses.is_alive(1, e1_2);
+    assert!(false); // We should panic before getting here :)
 }
 ```
 
