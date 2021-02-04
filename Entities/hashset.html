@@ -251,7 +251,8 @@ fn main() {
         // Spawn the same entity from a second generator
 <span class="boring">        Entity(0) // haha ur so sneaky hi
 </span>    };
-    assert!(statuses.is_alive(1, e1_2));
+    statuses.is_alive(1, e1_2);
+    assert!(false); // We should panic before getting here :)
 }
 </code></pre></pre>
 <p>You'll notice that in <code>is_alive</code> we panic if the entity hasn't been spawned yet since it's definitely a bug on the user's side to mixup entities like this. You could also <code>return false;</code> here if you're opposed to panic'ing :)</p>

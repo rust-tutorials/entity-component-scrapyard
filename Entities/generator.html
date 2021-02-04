@@ -165,16 +165,26 @@
                     <main>
                         <h1><a class="header" href="#a-basic-generator" id="a-basic-generator">A basic generator</a></h1>
 <p>Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and hopefully we wont have to touch the more complicated stuff like query's or archetypes when we do this...</p>
-<p>An entity in an ECS doesn't store any data it's effectively just a handle to some data stored in the ECS. A simple way to implement this would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.</p>
+<p>Every ECS that has performance as a goal will not store data *in* their Entity struct but 
+will instead have the Entity be a handle to component data. This is because when we ask 
+the ECS for all components <code>T1</code> and <code>T2</code> if they're stored in the Entity struct they'll 
+never be in cache when we go to access them. Whereas if we store a bunch of our <code>T1</code> components 
+in a Vec when we iterate through it we'll end up having the next components loaded into 
+cache which is far more efficient. (This also has many borrowck issues, maybe for another book though :&gt;)</p>
+<p>A simple way to implement this &quot;Entity as a handle&quot; thing would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.</p>
 <pre><code class="language-rust noplaypen">pub struct Entity(u64);
 </code></pre>
 <p>we could then add some derives</p>
 <pre><code class="language-rust noplaypen">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Entity(u64);
 </code></pre>
-<p>This would work pretty well, entities would be cheap to copy, compare with eachother, and they're relatively small in size which is good because we'll have a *lot* of entities in our ECS. Sequential ids would make for the code for generating new ids not super complex, we just add 1 to a counter. The first entity we spawn is <code>Entity(0)</code> the second is <code>Entity(1)</code> the third <code>Entity(2)</code> etc etc etc</p>
-<p>Well, lets try write up this entity spawning code and see if it ends up with any suprise complexity</p>
-<p>Lets start by making a struct with that counter and our spawn method that increments it</p>
+<p>This would work pretty well, entities would be cheap to copy, compare with eachother, 
+and they're relatively small in size which is good because we'll have a *lot* of 
+entities in our ECS. Sequential ids hopefully will also make the code for generating new 
+ids not super complex, we just add 1 to a counter.<br />
+The first entity we spawn is <code>Entity(0)</code> the second is <code>Entity(1)</code> the third <code>Entity(2)</code> etc etc etc</p>
+<p>Well, lets try write up this entity spawning code and see if it ends up with any suprise complexity.
+Lets start by making a struct with that counter and our spawn method that increments it</p>
 <pre><code class="language-rust noplaypen">struct EntityGenerator {
     next_id: u64,
 }
@@ -187,7 +197,9 @@ impl EntityGenerator {
     }
 }
 </code></pre>
-<p>Okay well thats not a lot of code although how exactly does <code>self.next_id += 1</code> handle the case where <code>self.next_id == u64::MAX</code> we're unlikely to ever have this many entities but we probably ought to atleast see what will happen...</p>
+<p>Okay well thats not a lot of code although how exactly does <code>self.next_id += 1</code> handle 
+the case where <code>self.next_id == u64::MAX</code> we're unlikely to ever have this many 
+entities but we probably ought to atleast see what will happen...</p>
 <p>(click the run button :3)</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -219,7 +231,11 @@ dbg!(entity);
 thread 'main' panicked at 'attempt to add with overflow', src/main.rs:14:8
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 </code></pre>
-<p>We could explicitly use <code>wrapping_add</code> to avoid this panic, but then two calls to <code>EntityGenerator::spawn</code> could return the same entity and that's definitely undesirable. <code>u64::MAX</code> is a *really* big number so whether we panic or use <code>wrapping_add</code> is unlikely to make much of a difference. For this guide I'm just going to panic but if you want to wrapping_add that's also fine :)</p>
+<p>We could explicitly use <code>wrapping_add</code> to avoid this panic, but then two calls to 
+<code>EntityGenerator::spawn</code> could return the same entity and that's definitely undesirable. 
+<code>u64::MAX</code> is a *really* big number so whether we panic or use <code>wrapping_add</code> is unlikely to make much of a difference.<br />
+For this guide I'm just going to panic but if you want to wrapping_add that's also fine :)<br />
+Note: overflow only panics in debug mode so if we want to panic on overflow we need to explicitly check for it</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 </span><span class="boring">pub struct Entity(u64);
 </span><span class="boring">
@@ -249,15 +265,25 @@ fn main() {
 <pre><code>thread 'main' panicked at 'Attempted to spawn an entity after running out of IDs'
 </code></pre>
 <p>Yep!</p>
-<p>Okay the next thing we want to do is mark entities as dead, that's a pretty core thing for our ECS huh :P? We'll want a <code>despawn</code> function but how is this function even going to work? We cant store the dead/alive status on the Entity itself because we can copy an entity before it's despawned and then it would still think it's alive. We need to store all the despawned status of entities in our <code>EntityGenerator</code></p>
+<p>Okay the next thing we want to do is mark entities as dead, that's a pretty core thing for our ECS huh :P?<br />
+We'll want a <code>despawn</code> function but how is this function even going to work? We cant store the 
+dead/alive status on the Entity itself because we can copy an entity before it's despawned and then 
+it would still think it's alive.<br />
+We need to store all the despawned status of entities in our <code>EntityGenerator</code></p>
 <p>There are a few options for this</p>
 <ul>
-<li>A <code>Vec&lt;Entity&gt;</code> where we push dead entities to it, we would have to iterate the entire vec to check if an entity is dead which could be *super* slow so this is a non-starter.</li>
-<li>A <code>Vec&lt;bool&gt;</code> which we index with the entity's u64 and set to true when we despawn the entity. This would be super fast to check if an entity is dead/alive, if you're concerned about ram consumption with this you could use a bitset instead which would have 1/8th the usage of <code>Vec&lt;bool&gt;</code></li>
-<li>A <code>HashSet&lt;Entity&gt;</code> (HashSets are effectively just <code>HashMap&lt;T, ()&gt;</code>) and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive</li>
+<li>A <code>Vec&lt;Entity&gt;</code> where we push dead entities to it, we would have to iterate the entire vec to 
+check if an entity is dead which could be *super* slow so this is a non-starter.</li>
+<li>A <code>Vec&lt;bool&gt;</code> which we index with the entity's u64 and set to true when we despawn the entity. 
+This would be super fast to check if an entity is dead/alive, if you're concerned about 
+ram consumption with this you could use a bitset instead which would have 1/8th the usage of <code>Vec&lt;bool&gt;</code></li>
+<li>A <code>HashSet&lt;Entity&gt;</code> and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive</li>
 </ul>
-<p>Option #2 and #3 would both be valid choices but for this guide I'm going to go with option... BOTH, the guide is called entity-component-*scrapyard* for a reason ;)</p>
-<p>For the sake of this guide im going to write a little boilerplate to let me switch between both implementations but you wont need to do any of this, I'll just quickly show this and then move onto the individual chapters</p>
+<p>Option #2 and #3 would both be valid choices but for this guide I'm going to go with option... 
+BOTH, the guide is called entity-component-*scrapyard* for a reason ;)</p>
+<p>For the sake of this guide im going to write a little boilerplate to let me switch between both 
+implementations but you wont need to do any of this, I'll just quickly show this and then move onto the individual chapters<br />
+(if you dont care for this part, the section for <a href="./hashset.html">hashset is here</a> and <a href="./bitset.html">bitset is here</a>)</p>
 <pre><code class="language-rust noplaypen">enum EntityStatuses {
     // We'll create these structs in the individual chapters :)
     HashsetMethod(HashsetMethod),
@@ -306,7 +332,7 @@ impl EntityGenerator {
     }
 }
 </code></pre>
-<p>The hashet method is <a href="./hashset.html">here</a> and the bitset method is <a href="./bitset.html">here</a></p>
+<p>That wraps up this part of the chapter, you can find the section for <a href="./hashset.html">hashset here</a> and <a href="./bitset.html">bitset here</a></p>
 
                     </main>
 
