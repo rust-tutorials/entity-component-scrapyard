@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Entities/entities.html"><strong aria-hidden="true">2.</strong> Entities</a></li><li class="chapter-item expanded "><a href="archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Entities/entities-summary.html"><strong aria-hidden="true">2.</strong> Entities</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Entities/generator.html"><strong aria-hidden="true">2.1.</strong> A basic generator</a></li><li class="chapter-item expanded "><a href="Entities/hashset.html"><strong aria-hidden="true">2.2.</strong> The Hashset method</a></li><li class="chapter-item expanded "><a href="Entities/bitset.html"><strong aria-hidden="true">2.3.</strong> The Bitset method</a></li></ol></li><li class="chapter-item expanded "><a href="archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -177,7 +177,8 @@ you dont know what an ECS is there's a good writeup <a href="https://www.google.
 <li>We wont touch on the Systems part of ECS because I personally feel that's better left to engines and users of the ECS to decide how best to structure the program</li>
 </ul>
 <p>A lot of the ECS' in the rust ecosystem use something called 'archetypes' so we'll be writing an archetype based ECS in this book. If you dont know what archetypes are don't worry they'll be explained later on in the book when we get around to implementing them :) If you're impatient and want to look at it now you can go ahead and do that :P <a href="./archetype-explanation">the section for that is here</a></p>
-<h1><a class="header" href="#entities" id="entities">Entities</a></h1>
+<h1><a class="header" href="#summary" id="summary">Summary</a></h1>
+<h1><a class="header" href="#a-basic-generator" id="a-basic-generator">A basic generator</a></h1>
 <p>Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and hopefully we wont have to touch the more complicated stuff like query's or archetypes when we do this...</p>
 <p>An entity in an ECS doesn't store any data it's effectively just a handle to some data stored in the ECS. A simple way to implement this would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.</p>
 <pre><code class="language-rust noplaypen">pub struct Entity(u64);
@@ -226,15 +227,14 @@ let entity = entity_generator.spawn();
 dbg!(entity);
 <span class="boring">}
 </span></code></pre></pre>
-<p>Oh well that's not great...</p>
+<p>Oh, well that's not great...</p>
 <pre><code>   Compiling playground v0.0.1 (/playground)
     Finished dev [unoptimized + debuginfo] target(s) in 1.44s
      Running `target/debug/playground`
 thread 'main' panicked at 'attempt to add with overflow', src/main.rs:14:8
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 </code></pre>
-<p>I know! We could explicitly use <code>wrapping_add</code> to avoid this panic.</p>
-<p>oh but then two calls to <code>EntityGenerator::spawn</code> could return the same entity and that's definitely undesirable, maybe panic'ing is what we want here? For now lets handle this explicitly rather than relying on rust to insert overflow checks.</p>
+<p>We could explicitly use <code>wrapping_add</code> to avoid this panic, but then two calls to <code>EntityGenerator::spawn</code> could return the same entity and that's definitely undesirable. <code>u64::MAX</code> is a *really* big number so whether we panic or use <code>wrapping_add</code> is unlikely to make much of a difference. For this guide I'm just going to panic but if you want to wrapping_add that's also fine :)</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 </span><span class="boring">pub struct Entity(u64);
 </span><span class="boring">
@@ -264,101 +264,44 @@ fn main() {
 <pre><code>thread 'main' panicked at 'Attempted to spawn an entity after running out of IDs'
 </code></pre>
 <p>Yep!</p>
-<p>Okay the next thing we want to do is despawn entities, thats a pretty useful thing we're going to need for our ECS... We'll want a <code>despawn</code> function but what is this function even going to do, we cant store the dead/alive status on the Entity itself because we can copy an entity before its despawned and then it would still think it's alive...</p>
-<p>I guess we need to store all the despawned entities in our <code>EntityGenerator</code> somewhere... a <code>Vec&lt;Entity&gt;</code> would be slow to check if an entity is dead so I guess we'll use a <code>HashMap</code></p>
-<pre><code class="language-rust noplaypen diff">struct EntityGenerator {
-    next_id: u64,
-    dead_entities: std::collections::HashMap&lt;Entity, ???&gt;,
+<p>Okay the next thing we want to do is mark entities as dead, that's a pretty core thing for our ECS huh :P? We'll want a <code>despawn</code> function but how is this function even going to work? We cant store the dead/alive status on the Entity itself because we can copy an entity before it's despawned and then it would still think it's alive. We need to store all the despawned status of entities in our <code>EntityGenerator</code></p>
+<p>There are a few options for this</p>
+<ul>
+<li>A <code>Vec&lt;Entity&gt;</code> where we push dead entities to it, we would have to iterate the entire vec to check if an entity is dead which could be *super* slow so this is a non-starter.</li>
+<li>A <code>Vec&lt;bool&gt;</code> which we index with the entity's u64 and set to true when we despawn the entity. This would be super fast to check if an entity is dead/alive, if you're concerned about ram consumption with this you could use a bitset instead which would have 1/8th the usage of <code>Vec&lt;bool&gt;</code></li>
+<li>A <code>HashSet&lt;Entity&gt;</code> (HashSets are effectively just <code>HashMap&lt;T, ()&gt;</code>) and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive</li>
+</ul>
+<p>Option #2 and #3 would both be valid choices but for this guide I'm going to go with option... BOTH, the guide is called entity-component-*scrapyard* for a reason ;)</p>
+<p>For the sake of this guide im going to write a little boilerplate to let me switch between both implementations but you wont need to do any of this, I'll just quickly show this and then move onto the individual chapters</p>
+<pre><code class="language-rust noplaypen">enum EntityStatuses {
+    // We'll create these structs in the individual chapters :)
+    HashsetMethod(HashsetMethod),
+    BitsetMethod(BitsetMethod),
+}
+
+impl EntityStatuses {
+    fn despawn(&amp;mut self, entity: Entity) {
+        match self {
+            Self::HashsetMethod(hashset) =&gt; hashset.despawn(entity),
+            Self::BitsetMethod(bitset) =&gt; bitset.despawn(entity),
+        }
+    }
+
+    fn is_alive(&amp;self, next_id: u64, entity: Entity) -&gt; bool {
+        match self {
+            Self::HashsetMethod(hashset) =&gt; hashset.is_alive(entity),
+            Self::BitsetMethod(bitset) =&gt; bitset.is_alive(entity),
+        }
+    }
 }
 </code></pre>
-<p>Oh I guess there's nothing we need to store for the key so lets just use a <code>HashSet</code> instead</p>
+<p>And now I'll just plop this enum into <code>EntityGenerator</code> and we can move onto the next chapter :)</p>
 <pre><code class="language-rust noplaypen">struct EntityGenerator {
     next_id: u64,
-    dead_entities: std::collections::HashSet&lt;Entity&gt;,
+    entity_statuses: EntityStatuses,
 }
-</code></pre>
-<p>Okay now lets just hookup this <code>HashSet</code> to the <code>is_alive</code> and <code>despawn</code> methods...</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">   dead_entities: std::collections::HashSet&lt;Entity&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span>impl EntityGenerator {
-<span class="boring">   fn spawn(&amp;mut self) -&gt; Entity {
-</span><span class="boring">       let entity = Entity(self.next_id);
-</span><span class="boring">       if self.next_id == u64::MAX {
-</span><span class="boring">           panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-</span><span class="boring">       }
-</span><span class="boring">       self.next_id += 1;
-</span><span class="boring">       entity
-</span><span class="boring">   }
-</span><span class="boring">
-</span><span class="boring">
-</span>    fn despawn(&amp;mut self, entity: Entity) {
-        self.dead_entities.insert(entity);
-    }
 
-    fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-        self.dead_entities.contains(&amp;entity) == false
-    }
-}
-<span class="boring">}
-</span></code></pre></pre>
-<p>Right there we go that was fairly easy we're done now right? :)</p>
-<p>no... :( </p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">   dead_entities: std::collections::HashSet&lt;Entity&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl EntityGenerator {
-</span><span class="boring">   fn spawn(&amp;mut self) -&gt; Entity {
-</span><span class="boring">       let entity = Entity(self.next_id);
-</span><span class="boring">       if self.next_id == u64::MAX {
-</span><span class="boring">           panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-</span><span class="boring">       }
-</span><span class="boring">       self.next_id += 1;
-</span><span class="boring">       entity
-</span><span class="boring">   }
-</span><span class="boring">
-</span><span class="boring">
-</span><span class="boring">   fn despawn(&amp;mut self, entity: Entity) {
-</span><span class="boring">       self.dead_entities.insert(entity);
-</span><span class="boring">   }
-</span><span class="boring">
-</span><span class="boring">   fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-</span><span class="boring">       self.dead_entities.contains(&amp;entity) == false
-</span><span class="boring">   }
-</span><span class="boring">}
-</span>fn main() {
-    let mut generator_1 = EntityGenerator { next_id: 0, dead_entities: std::collections::HashSet::new() };
-    let mut generator_2 = EntityGenerator { next_id: 0, dead_entities: std::collections::HashSet::new() };
-
-    let e1_1 = generator_1.spawn();
-    generator_2.despawn(e1_1);
-    let e1_2 = generator_2.spawn();
-    assert!(generator_2.is_alive(e1_2));
-}
-</code></pre></pre>
-<p>Sooooooooo this is pretty problematic, we can spawn entities with other generators, despawn them, and then spawn a dead entity. Looking back over our code with this in mind we can also see that we can ask if an entity from another generator is alive and it would say yes. Lets fix that quickly by just checking if the provided entity's index is &lt; the highest ID we handed out..</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">   dead_entities: std::collections::HashSet&lt;Entity&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span>impl EntityGenerator {
+impl EntityGenerator {
 <span class="boring">    fn spawn(&amp;mut self) -&gt; Entity {
 </span><span class="boring">        let entity = Entity(self.next_id);
 </span><span class="boring">        if self.next_id == u64::MAX {
@@ -367,33 +310,111 @@ fn main() {
 </span><span class="boring">        self.next_id += 1;
 </span><span class="boring">        entity
 </span><span class="boring">    }
-</span><span class="boring">
-</span>    fn despawn(&amp;mut self, entity: Entity) {
-        if entity.0 &lt; self.next_id {
-            self.dead_entities.insert(entity);
-        }
+</span>    // -Snip
+
+    fn despawn(&amp;mut self, entity: Entity) {
+        self.entity_statuses.despawn(entity)
     }
 
     fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-        if entity.0 &lt; self.next_id {
-            return self.dead_entities.contains(&amp;entity) == false;
+        self.entity_statuses.is_alive(entity)
+    }
+}
+</code></pre>
+<p>The hashet method is <a href="Entities/./hashset.html">here</a> and the bitset method is <a href="Entities/./bitset.html">here</a></p>
+<h1><a class="header" href="#the-hashset-method" id="the-hashset-method">The Hashset method</a></h1>
+<p>Hellooo I see you chose the hashset method :P</p>
+<p>The code for this speaks for itself so I'll just show it-</p>
+<pre><code class="language-rust noplaypen">use std::collections::HashSet;
+struct HashsetMethod(HashSet&lt;Entity&gt;);
+
+impl HashsetMethod {
+    fn despawn(&amp;mut self, entity: Entity) {
+        self.0.insert(entity);
+    }
+
+    fn is_alive(&amp;self, entity: Entity) -&gt; bool {
+        self.0.contains(&amp;entity) == false
+    }
+}
+</code></pre>
+<p>Right there we go that was fairly easy we're done now right? :)<br />
+no... :( </p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+</span><span class="boring">pub struct Entity(u64);
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashSet;
+</span><span class="boring">struct HashsetMethod(HashSet&lt;Entity&gt;);
+</span><span class="boring">
+</span><span class="boring">impl HashsetMethod {
+</span><span class="boring">   fn despawn(&amp;mut self, entity: Entity) {
+</span><span class="boring">       self.0.insert(entity);
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   fn is_alive(&amp;self, entity: Entity) -&gt; bool {
+</span><span class="boring">       self.0.contains(&amp;entity) == false
+</span><span class="boring">   }
+</span><span class="boring">}
+</span>
+fn main() {
+    let mut statuses = HashsetMethod(HashSet::new());
+
+    let e1_1 = {
+        // Spawn an entity from one generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi 
+</span>    };
+    statuses.despawn(e1_1);
+    let e1_2 = {
+        // Spawn the same entity from a second generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi
+</span>    };
+    assert!(statuses.is_alive(e1_2));
+}
+</code></pre></pre>
+<p>Sooooooooo this is pretty problematic, we can spawn entities with other generators, despawn them, and then spawn a dead entity. Looking back over our code with this in mind we can also see that we can ask if an entity that hasnt been spawned yet is alive and it would say yes. So how should we handle this? We can use <code>next_id</code> to check if the entity passed in has been spawned yet. </p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+</span><span class="boring">pub struct Entity(u64);
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashSet;
+</span><span class="boring">struct HashsetMethod(HashSet&lt;Entity&gt;);
+</span><span class="boring">
+</span>impl HashsetMethod {
+    fn despawn(&amp;mut self, next_id: u64, entity: Entity) {
+        // New
+        if self.is_alive(next_id, entity) == false {
+            return;
         }
-        false
+
+        self.0.insert(entity);
+    }
+
+    fn is_alive(&amp;self, next_id: u64, entity: Entity) -&gt; bool {
+        // New
+        if entity.0 &gt;= next_id {
+            panic!(&quot;Attempted to use an entity from a different EntityGenerator&quot;);
+        }
+
+        self.0.contains(&amp;entity) == false
     }
 }
 
 fn main() {
-    let mut generator_1 = EntityGenerator { next_id: 0, dead_entities: std::collections::HashSet::new() };
-    let mut generator_2 = EntityGenerator { next_id: 0, dead_entities: std::collections::HashSet::new() };
+    let mut statuses = HashsetMethod(HashSet::new());
 
-    let e1_1 = generator_1.spawn();
-    assert!(generator_2.is_alive(e1_1) == false);
-    generator_2.despawn(e1_1);
-    let e1_2 = generator_2.spawn();
-    assert!(generator_2.is_alive(e1_2));
+    let e1_1 = {
+        // Spawn an entity from one generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi 
+</span>    };
+    statuses.despawn(0, e1_1);
+    let e1_2 = {
+        // Spawn the same entity from a second generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi
+</span>    };
+    assert!(statuses.is_alive(1, e1_2));
 }
 </code></pre></pre>
-<p>And there we go both of those problems are solved now... We should probably write some tests to see if this all works huh</p>
+<p>You'll notice that in <code>is_alive</code> we panic if the entity hasn't been spawned yet since it's definitely a bug on the user's side to mixup entities like this. You could also <code>return false;</code> here if you're opposed to panic'ing :)</p>
+<h1><a class="header" href="#the-bitset-method" id="the-bitset-method">The Bitset method</a></h1>
 <h1><a class="header" href="#what-are-archetypes" id="what-are-archetypes">What are archetypes?</a></h1>
 <p>Great question, and very necessary to understand before we write an archetype based ECS lol</p>
 <p>Note: There are lots of ways to make an ECS so you will likely come across ECS' that dont use archetypes *but* hopefully by the

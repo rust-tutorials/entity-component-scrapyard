@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - entity-component-scrapyard</title>
+        <title>The Hashset method - entity-component-scrapyard</title>
         
         
 
@@ -18,28 +18,28 @@
         <meta name="theme-color" content="#ffffff" />
 
         
-        <link rel="icon" href="favicon.svg">
+        <link rel="icon" href="../favicon.svg">
         
         
-        <link rel="shortcut icon" href="favicon.png">
+        <link rel="shortcut icon" href="../favicon.png">
         
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
         
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="stylesheet" href="../css/print.css" media="print">
         
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
         
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         
@@ -49,7 +49,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Entities/entities-summary.html"><strong aria-hidden="true">2.</strong> Entities</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Entities/generator.html"><strong aria-hidden="true">2.1.</strong> A basic generator</a></li><li class="chapter-item expanded "><a href="Entities/hashset.html"><strong aria-hidden="true">2.2.</strong> The Hashset method</a></li><li class="chapter-item expanded "><a href="Entities/bitset.html"><strong aria-hidden="true">2.3.</strong> The Bitset method</a></li></ol></li><li class="chapter-item expanded "><a href="archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../Entities/entities-summary.html"><strong aria-hidden="true">2.</strong> Entities</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../Entities/generator.html"><strong aria-hidden="true">2.1.</strong> A basic generator</a></li><li class="chapter-item expanded "><a href="../Entities/hashset.html" class="active"><strong aria-hidden="true">2.2.</strong> The Hashset method</a></li><li class="chapter-item expanded "><a href="../Entities/bitset.html"><strong aria-hidden="true">2.3.</strong> The Bitset method</a></li></ol></li><li class="chapter-item expanded "><a href="../archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -131,7 +131,7 @@
 
                     <div class="right-buttons">
                         
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         
@@ -163,27 +163,111 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#entity-component-scrapyard-introduction" id="entity-component-scrapyard-introduction">Entity Component Scrapyard: Introduction</a></h1>
-<p>Hiiii person reading this. </p>
-<p>EC-Scrapyard is a tutorial walkthrough thingy where we're going to write an ECS from scratch :3</p>
-<p>This book is written with the assumption that the reader knows what an ECS is but not necessarily how it works or how to go about writing one. If
-you dont know what an ECS is there's a good writeup <a href="https://www.google.com">here</a></p>
-<p>A few caveats before we start:</p>
-<ul>
-<li>We wont be using any dependencies, we will be using rust's standard library though :&quot;)</li>
-<li>We will only use safe code so <code>#![forbid(unsafe_code)]</code> will be placed at the top of <code>lib.rs</code></li>
-<li>We wont touch on the Systems part of ECS because I personally feel that's better left to engines and users of the ECS to decide how best to structure the program</li>
-</ul>
-<p>A lot of the ECS' in the rust ecosystem use something called 'archetypes' so we'll be writing an archetype based ECS in this book. If you dont know what archetypes are don't worry they'll be explained later on in the book when we get around to implementing them :) If you're impatient and want to look at it now you can go ahead and do that :P <a href="./archetype-explanation">the section for that is here</a></p>
+                        <h1><a class="header" href="#the-hashset-method" id="the-hashset-method">The Hashset method</a></h1>
+<p>Hellooo I see you chose the hashset method :P</p>
+<p>The code for this speaks for itself so I'll just show it-</p>
+<pre><code class="language-rust noplaypen">use std::collections::HashSet;
+struct HashsetMethod(HashSet&lt;Entity&gt;);
+
+impl HashsetMethod {
+    fn despawn(&amp;mut self, entity: Entity) {
+        self.0.insert(entity);
+    }
+
+    fn is_alive(&amp;self, entity: Entity) -&gt; bool {
+        self.0.contains(&amp;entity) == false
+    }
+}
+</code></pre>
+<p>Right there we go that was fairly easy we're done now right? :)<br />
+no... :( </p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+</span><span class="boring">pub struct Entity(u64);
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashSet;
+</span><span class="boring">struct HashsetMethod(HashSet&lt;Entity&gt;);
+</span><span class="boring">
+</span><span class="boring">impl HashsetMethod {
+</span><span class="boring">   fn despawn(&amp;mut self, entity: Entity) {
+</span><span class="boring">       self.0.insert(entity);
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   fn is_alive(&amp;self, entity: Entity) -&gt; bool {
+</span><span class="boring">       self.0.contains(&amp;entity) == false
+</span><span class="boring">   }
+</span><span class="boring">}
+</span>
+fn main() {
+    let mut statuses = HashsetMethod(HashSet::new());
+
+    let e1_1 = {
+        // Spawn an entity from one generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi 
+</span>    };
+    statuses.despawn(e1_1);
+    let e1_2 = {
+        // Spawn the same entity from a second generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi
+</span>    };
+    assert!(statuses.is_alive(e1_2));
+}
+</code></pre></pre>
+<p>Sooooooooo this is pretty problematic, we can spawn entities with other generators, despawn them, and then spawn a dead entity. Looking back over our code with this in mind we can also see that we can ask if an entity that hasnt been spawned yet is alive and it would say yes. So how should we handle this? We can use <code>next_id</code> to check if the entity passed in has been spawned yet. </p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+</span><span class="boring">pub struct Entity(u64);
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashSet;
+</span><span class="boring">struct HashsetMethod(HashSet&lt;Entity&gt;);
+</span><span class="boring">
+</span>impl HashsetMethod {
+    fn despawn(&amp;mut self, next_id: u64, entity: Entity) {
+        // New
+        if self.is_alive(next_id, entity) == false {
+            return;
+        }
+
+        self.0.insert(entity);
+    }
+
+    fn is_alive(&amp;self, next_id: u64, entity: Entity) -&gt; bool {
+        // New
+        if entity.0 &gt;= next_id {
+            panic!(&quot;Attempted to use an entity from a different EntityGenerator&quot;);
+        }
+
+        self.0.contains(&amp;entity) == false
+    }
+}
+
+fn main() {
+    let mut statuses = HashsetMethod(HashSet::new());
+
+    let e1_1 = {
+        // Spawn an entity from one generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi 
+</span>    };
+    statuses.despawn(0, e1_1);
+    let e1_2 = {
+        // Spawn the same entity from a second generator
+<span class="boring">        Entity(0) // haha ur so sneaky hi
+</span>    };
+    assert!(statuses.is_alive(1, e1_2));
+}
+</code></pre></pre>
+<p>You'll notice that in <code>is_alive</code> we panic if the entity hasn't been spawned yet since it's definitely a bug on the user's side to mixup entities like this. You could also <code>return false;</code> here if you're opposed to panic'ing :)</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="../Entities/generator.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
-                            <a rel="next" href="Entities/entities-summary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../Entities/bitset.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -195,9 +279,13 @@ you dont know what an ECS is there's a good writeup <a href="https://www.google.
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="../Entities/generator.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
                 
-                    <a rel="next" href="Entities/entities-summary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../Entities/bitset.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -220,14 +308,14 @@ you dont know what an ECS is there's a good writeup <a href="https://www.google.
         
 
         
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
         
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
         
