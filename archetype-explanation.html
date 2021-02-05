@@ -264,9 +264,9 @@ we would no longer fit this criteria which means we cant store our entity's comp
   self.archetypes.push(a_1234);
 }
 </code></pre>
-<p>Aaaaaaaaand yep... we have to move all of the components out of the columns in <code>A_123</code> which has to shuffle around the components 
-*after* our entity's in the columns. We then have to push the removed component to our new archetype's columns. That's a lot of 
-moving memory which isn't the fastest thing in the world- to say the least</p>
+<p>Aaaaaaaaand yep... we have to move all of the components out of the columns in <code>A_123</code>. We then have to 
+push the removed component to our new archetype's columns. That's a lot of moving memory which isn't the 
+fastest thing in the world- to say the least</p>
 <p>There's not a whole lot we can do about this. The need to move all this memory around when adding/removing components is
 entirely necessary for the previously mentioned amazing iteration performance. Archetype ECS' are inherently about trading in 
 add/remove performance in exchange for iteration performance. </p>
