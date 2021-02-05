@@ -164,45 +164,116 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#what-are-archetypes" id="what-are-archetypes">What are archetypes?</a></h1>
-<p>Great question, and very necessary to understand before we write an archetype based ECS lol</p>
-<p>Note: There are lots of ways to make an ECS so you will likely come across ECS' that dont use archetypes *but* hopefully by the
-end of this chapter when you see someone talk about archetype ECS' you'll understand what they mean. </p>
-<p>Note: for this section when you read something like &quot;an entity <code>[T, T1, T2]</code>&quot; it means that the entity has components of type <code>T1</code>, <code>T2</code> and <code>T3</code> and *nothing else*, if there's no square brackets it means the entity has those components and maybe more</p>
-<p>One of the things we *really* want out of our ECS is being able to iterate really fast since that's the primary way of using it. This is where archetypes come in, an archetype is a pool of entities that all have the same set of components, e.g. all entities with <code>[T1, T2]</code> will be stored in one archetype and all entities with <code>[T1, T3]</code> in another</p>
-<p>What this lets us do is that an archetype that stores components <code>[T, T1]</code> can (in psuedocode) look something like:</p>
-<pre><code class="language-rust noplaypen">struct Archetype {
-    t_components: Vec&lt;T&gt;,
-    t1_components: Vec&lt;T1&gt;,
+<p>Archetypes are the underlying storage method we will be using to store components in our ECS. In 
+our ECS we will use something like <code>Vec&lt;Archetype&gt;</code> to store everything.<br />
+An archetype stores *all* of the components on an entity and also only stores components from entities 
+with the same set of components. E.G. an entity with *only* <code>[T1, T2, T3]</code> components would
+have all components stored in one archetype, and an entity with *only* <code>[T1, T2, T3, T4]</code> 
+components would have all the components stored in a different archetype.</p>
+<p>Let's say we have an archetype, we'll call it <code>A_123</code>. <code>A_123</code> is storing 
+components for entities that only have components <code>[T1, T2, T3]</code>.<br />
+When we spawn an entity like so:</p>
+<pre><code class="language-rust noplaypen">world.spawn((
+  T1 { .. },
+  T2 { .. },
+  T3 { .. },
+));
+</code></pre>
+<p>We need to find an archetype to place all these components into. As mentioned previously we want to find if there's
+an archetype that only stores components for entities with <code>[T1, T2, T3]</code>, and, luckily for us, there is! It's <code>A_123</code>.</p>
+<p>Let's take a quick look at what <code>A_123</code> might look like internally and how we would go about placing these components into it.<br />
+In psuedocode we have some archetype struct that looks a bit like:</p>
+<pre><code class="language-rust noplaypen">struct A_123 {
+  column_1: Vec&lt;T1&gt;,
+  column_2: Vec&lt;T2&gt;,
+  column_3: Vec&lt;T3&gt;,
 }
 </code></pre>
-<p>Both of the <code>Vec</code>s will be the same length since we *only* store entities with <code>[T, T1]</code> components in this archetype. We also make sure the that the components at each index in the <code>Vec</code>s correspond to the same entity. e.g.</p>
-<p><code>t_components[0]</code> and <code>t1_components[0]</code> would be the components for the first entity stored in this archetype,
-<code>t_components[1]</code> and <code>t1_components[1]</code> for the second entitiy stored in this archetype etc</p>
-<p>What this means is that when we want to iterate all entities that have <code>T</code> and <code>T1</code> components we can find this archetype (and other archetypes that have a <code>Vec&lt;T&gt;</code> and <code>Vec&lt;T1&gt;</code>) and then return all the components we are interested in by just blindly iterating both <code>Vec</code>s. This is super fast because all our components are all lined up in contiguous blocks and we never have to skip any which minimises branching and allows for good cache usage</p>
-<p>To expand on the &quot;and other archetypes&quot; comment a bit, an entity with components <code>[T, T1, T2]</code> would *not* have its components stored in this archetype, its component would be stored in something like this (psuedocode)</p>
-<pre><code class="language-rust noplaypen">struct OtherArchetype {
-    t_components: Vec&lt;T&gt;,
-    t1_components: Vec&lt;T1&gt;,
-    t2_components: Vec&lt;T2&gt;,
-} 
+<p>You might be wondering why we store each component type in a separate vec rather than something like this:</p>
+<pre><code class="language-rust noplaypen">struct A_123(Vec&lt;(T1, T2, T3)&gt;);
 </code></pre>
-<p>This makes the general overview for the implementation of query's in an archetype ecs look something like:</p>
+<p>There are a few reasons for this,</p>
 <ul>
-<li>Try find an archetype that stores the components we are interested in</li>
-<li>If we can find one:
+<li>The borrow checker will get angry at us if we have two Query's where one wants to access components <code>T1</code> mutably and
+the other wants to access <code>T2</code> immutably (We cant create an iterator over only *parts* of the (T1, T2, T3) tuple afterall)</li>
+<li>It's more performant to store the components in separate Vecs as when we iterate only <code>T1</code> we dont needlessly load 
+the <code>T2</code> and <code>T3</code> components into the cpu's cache.</li>
+</ul>
+<p>With that explained lets look at some psuedocode for that <code>spawn</code> function we used earlier.</p>
+<pre><code class="language-rust noplaypen">fn spawn(&amp;mut self, data: (T1, T2, T3)) -&gt; Entity {
+  let a_123 = /* magically get the A_123 archetype */;
+
+  let entity = self.entity_generator.spawn();
+  a_123.entities.push(entity);
+
+  a_123.column_1.push(data.0);
+  a_123.column_2.push(data.1);
+  a_123.column_3.push(data.2);
+
+  entity
+}
+</code></pre>
+<p>...Huh interesting how all this psuedocode looks awfully like Rust... I'm sure its just a coincedence ;)</p>
+<p>There are a few things to talk about the above code:</p>
 <ul>
-<li>Create iterators over the relevent component <code>Vec</code>s </li>
-<li>Call next() repeatedly on said iterators until they are finished</li>
-<li>Go back to step #1</li>
+<li>What's this <code>entities</code> field that suddenly appeared?</li>
+<li>Do we need to store any kind of metadata so that we know which entity every element
+in each of the component vecs corresponds to?</li>
 </ul>
-</li>
-<li>Else:
-<ul>
-<li>Our query has finished :)</li>
-</ul>
-</li>
-</ul>
-<p>So far archetypes sound pretty good performance wise right? well they have a big downside which is that adding and removing components from entities is **slow**, like *really* slow. If we take the previous example of an entity with components <code>[T, T1, T2]</code> if we wanted to remove component <code>T2</code> and keep our amazing iteration performance we need to remove all three components from the <code>[T, T1, T2]</code> archetype and and then copy <code>T</code> and <code>T1</code> into the <code>[T, T1]</code> archetype. This is way expensive, and is why you will often see people *heavily* cautioning against performing component add/removes with archetype ECS', bevy (a rust game engine) is even going as far as to <a href="https://www.google.com">add an alternative component storage</a> in addition to archetypes just to allow for opt-in faster add/removes for specified component types.  </p>
+<p>Both of these things are *actually* one and the same.<br />
+Because we store entities with *only* components <code>[T1, T2, T3]</code> in this archetype, the component 
+vecs will always be the same length. This means that when we push components to the front of the vecs 
+they'll all end up at the same index.</p>
+<p>What we can do with this knowledge is have have a <code>Vec&lt;Entity&gt;</code> in the archetype and 
+push the spawned <code>Entity</code> to the entities vec. We then have an implicit mapping where for every index in 
+the component columns we can access the <code>entities</code> vec at the same index to check what entity this component is for. 
+It's for the same reason that we can also access the other component columns at this index and the component will be for
+the same entity.</p>
+<p>That last point is why Query's in archetype based ECS' are *so* fast. When we want to iterate all <code>T1</code> and <code>T2</code> components
+in our world we can just find every archetype that has a column for <code>T1</code> and also a column for <code>T2</code> and then blindly iterate
+both Vecs at the same time. Some psuedocode to hopefully help demonstrate what I mean:</p>
+<pre><code class="language-rust noplaypen">fn iterate_T1_and_T2(archetype: &amp;A_123) -&gt; impl Iterator&lt;Item = (&amp;T1, &amp;T2)&gt; {
+  archetype.column_1.iter().zip(archetype.column_2.iter())
+}
+</code></pre>
+<p>Now that you (hopefully) have an understanding of how components get stored in archetype based ECS' and the performance
+advantages we can get from it, it's time to talk about one of the biggest flaws of the archetype model. Adding/Removing components
+is *really* slow.. like.. **really** slow.</p>
+<p>Let's continue with our previous example of spawning our entity with components <code>[T1, T2, T3]</code>. It's sitting pretty comfortably in
+our <code>A_123</code> archetype and we'll have super fast iteration times if we add more entities to this archetype and query for their components.</p>
+<p>Now lets try adding a component to our entity. As previously mentioned our <code>A_123</code> archetype stores entities which *only* have 
+<code>[T1, T2, T3]</code> components as this lets us have amazing iteration speeds. Now let's say we add a component <code>T4</code> to out entity, 
+we would no longer fit this criteria which means we cant store our entity's components in <code>A_123</code>, we'll have to make a second archetype- 
+<code>A_1234</code> it will store components for entities who only have <code>[T1, T2, T3, T4]</code></p>
+<p>Lets write some quick psuedocode and see if the performance problem here speaks for itself:</p>
+<pre><code class="language-rust noplaypen">fn add_T4_to_entity_in_A_123(&amp;mut self, entity: Entity, data: T4) {
+  let a_123 = /* magically get the A_123 archetype */;
+  let index = /* magically get the index in the 
+  component columns corresponding to the entity */;
+
+  let a_1234 = /* magically get the A_1234 archetype */;
+
+  a_1234.entities.push(entity);
+  a_1234.column_4.push(data);
+
+  // Oh no this doesnt look cheap at all
+  a_1234.column_1.push(a_123.column_1.remove(index));
+  a_1234.column_2.push(a_123.column_2.remove(index));
+  a_1234.column_3.push(a_123.column_3.remove(index));
+
+  self.archetypes.push(a_1234);
+}
+</code></pre>
+<p>Aaaaaaaaand yep... we have to move all of the components out of the columns in <code>A_123</code> which has to shuffle around the components 
+*after* our entity's in the columns. We then have to push the removed component to our new archetype's columns. That's a lot of 
+moving memory which isn't the fastest thing in the world- to say the least</p>
+<p>There's not a whole lot we can do about this. The need to move all this memory around when adding/removing components is
+entirely necessary for the previously mentioned amazing iteration performance. Archetype ECS' are inherently about trading in 
+add/remove performance in exchange for iteration performance. </p>
+<p>There are others ways to model your ECS such as sparsesets which have signficantly better add/remove performance
+in exchange for worse iteration performance relative to archetype based ECS' (still fast though :P). There's a good rust ECS
+that uses sparsesets you can find it <a href="https://github.com/leudz/shipyard">here</a>. There's no one best way to model an ECS, sparseset
+and archetype ECS' just make different tradeoffs :)</p>
 
                     </main>
 
