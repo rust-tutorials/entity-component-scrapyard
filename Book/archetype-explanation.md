@@ -116,9 +116,9 @@ fn add_T4_to_entity_in_A_123(&mut self, entity: Entity, data: T4) {
 }
 ```
 
-Aaaaaaaaand yep... we have to move all of the components out of the columns in ``A_123`` which has to shuffle around the components 
-\*after* our entity's in the columns. We then have to push the removed component to our new archetype's columns. That's a lot of 
-moving memory which isn't the fastest thing in the world- to say the least
+Aaaaaaaaand yep... we have to move all of the components out of the columns in ``A_123``. We then have to 
+push the removed component to our new archetype's columns. That's a lot of moving memory which isn't the 
+fastest thing in the world- to say the least
 
 There's not a whole lot we can do about this. The need to move all this memory around when adding/removing components is
 entirely necessary for the previously mentioned amazing iteration performance. Archetype ECS' are inherently about trading in 
