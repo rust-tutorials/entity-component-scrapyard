@@ -1,8 +1,5 @@
 # Summary
 
 - [Introduction](./introduction.md)
-- [Entities](./Entities/entities-summary.md)
-  - [A basic generator](./Entities/generator.md)
-  - [The Hashset method](./Entities/hashset.md)
-  - [The Bitset method](./Entities/bitset.md)
+- [A basic entity generator](./Entities/generator.md)
 - [What are archetypes?](./archetype-explanation.md)

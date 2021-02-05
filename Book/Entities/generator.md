@@ -1,13 +1,13 @@
-# A basic generator
+# A basic entity generator
 
-Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and hopefully we wont have to touch the more complicated stuff like query's or archetypes when we do this...
+Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and by starting here we can make progress without tackling some of the harder stuff immediately :)
 
 Every ECS that has performance as a goal will not store data \*in* their Entity struct but 
 will instead have the Entity be a handle to component data. This is because when we ask 
 the ECS for all components ``T1`` and ``T2`` if they're stored in the Entity struct they'll 
-never be in cache when we go to access them. Whereas if we store a bunch of our ``T1`` components 
-in a Vec when we iterate through it we'll end up having the next components loaded into 
-cache which is far more efficient. (This also has many borrowck issues, maybe for another book though :>)
+never be in cache when we go to access them. (This also has many borrowck issues, maybe for another book though :>)
+Whereas if we store a bunch of our ``T1`` components in a Vec, when we iterate through it 
+we'll end up having the next components loaded into cache which is far more efficient.
 
 A simple way to implement this "Entity as a handle" thing would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.
 ```rust, noplaypen
@@ -67,13 +67,6 @@ dbg!(entity);
 ```
 
 Oh, well that's not great...
-```
-   Compiling playground v0.0.1 (/playground)
-    Finished dev [unoptimized + debuginfo] target(s) in 1.44s
-     Running `target/debug/playground`
-thread 'main' panicked at 'attempt to add with overflow', src/main.rs:14:8
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-```
 
 We could explicitly use ``wrapping_add`` to avoid this panic, but then two calls to 
 ``EntityGenerator::spawn`` could return the same entity and that's definitely undesirable. 
@@ -127,64 +120,174 @@ There are a few options for this
   ram consumption with this you could use a bitset instead which would have 1/8th the usage of ``Vec<bool>``
   - A ``HashSet<Entity>`` and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive
 
-Option #2 and #3 would both be valid choices but for this guide I'm going to go with option... 
-BOTH, the guide is called entity-component-\*scrapyard* for a reason ;)
+Option #2 and #3 would both be valid choices but for this guide I'm going to go with the HashSet option because its simpler :) Option #2 should work well as a drop-in replacement for the hashset code though so feel free to do that on your own! :)
 
-For the sake of this guide im going to write a little boilerplate to let me switch between both 
-implementations but you wont need to do any of this, I'll just quickly show this and then move onto the individual chapters  
-(if you dont care for this part, the section for [hashset is here](./hashset.md) and [bitset is here](./bitset.md))
+# The Hashset method
 
-```rust, noplaypen
-enum EntityStatuses {
-    // We'll create these structs in the individual chapters :)
-    HashsetMethod(HashsetMethod),
-    BitsetMethod(BitsetMethod),
-}
-
-impl EntityStatuses {
-    fn despawn(&mut self, entity: Entity) {
-        match self {
-            Self::HashsetMethod(hashset) => hashset.despawn(entity),
-            Self::BitsetMethod(bitset) => bitset.despawn(entity),
-        }
-    }
-
-    fn is_alive(&self, next_id: u64, entity: Entity) -> bool {
-        match self {
-            Self::HashsetMethod(hashset) => hashset.is_alive(entity),
-            Self::BitsetMethod(bitset) => bitset.is_alive(entity),
-        }
-    }
-}
-```
-
-And now I'll just plop this enum into ``EntityGenerator`` and we can move onto the next chapter :)
+The code here will likely speak for itself so I'll just show it-
 
 ```rust, noplaypen
 struct EntityGenerator {
     next_id: u64,
-    entity_statuses: EntityStatuses,
+    // New
+    dead_entities: std::collections::HashSet<Entity>,
 }
 
 impl EntityGenerator {
-#     fn spawn(&mut self) -> Entity {
-#         let entity = Entity(self.next_id);
-#         if self.next_id == u64::MAX {
-#             panic!("Attempted to spawn an entity after running out of IDs");
-#         }
-#         self.next_id += 1;
-#         entity
-#     }
     // -Snip
 
     fn despawn(&mut self, entity: Entity) {
-        self.entity_statuses.despawn(entity)
+        self.dead_entities.insert(entity);
     }
 
     fn is_alive(&self, entity: Entity) -> bool {
-        self.entity_statuses.is_alive(entity)
+        # I like my ``== false`` okay
+        self.dead_entities.contains(&entity) == false
     }
 }
 ```
 
-That wraps up this part of the chapter, you can find the section for [hashset here](./hashset.md) and [bitset here](./bitset.md)
+At first glance this seems pretty correct right? but it isn't ^^" there's an implicit assumption in this code that 
+we only ever receive entities that were spawned from this ``EntityGenerator`` but we can just ignore that and cause
+the generator to spawn a dead entity like so:
+
+```rust
+# #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#pub struct Entity(u64);
+#
+#struct EntityGenerator {
+#    next_id: u64,
+#    dead_entities: std::collections::HashSet<Entity>,
+#}
+#
+#impl EntityGenerator {
+#    fn spawn(&mut self) -> Entity {
+#        let entity = Entity(self.next_id);
+#        if self.next_id == u64::MAX {
+#            panic!("Attempted to spawn an entity after running out of IDs");
+#        }
+#        self.next_id += 1;
+#        entity
+#    }
+#
+#    fn despawn(&mut self, entity: Entity) {
+#        self.dead_entities.insert(entity);
+#    }
+#
+#    fn is_alive(&self, entity: Entity) -> bool {
+#        self.dead_entities.contains(&entity) == false
+#    }
+#}
+#
+fn main() {
+    use std::collections::HashSet;
+    let mut gen_1 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
+    let mut gen_2 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
+
+    let e1_1 = gen_1.spawn();
+    gen_2.despawn(e1_1);
+    let e1_2 = gen_2.spawn();
+    assert!(gen_2.is_alive(e1_2));
+}
+```
+
+This is pretty problematic to say the least :P We can spawn entities with other generators, despawn them, and then spawn a dead entity. Looking back over our code with this in mind we can also see that if we call ``is_alive`` on an unspawned entity it would say yes... Soooooo how can we check for this?  
+We could store another Hashet for every spawned entity but that would be really slow and waste memory, what's better is that we can compare ``self.next_id`` to the entity's ``u64`` to see if its indistinguishable from an entity spawned from this generator e.g.
+
+```rust
+# #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#pub struct Entity(u64);
+#
+#struct EntityGenerator {
+#    next_id: u64,
+#    dead_entities: std::collections::HashSet<Entity>,
+#}
+#
+impl EntityGenerator {
+#    fn spawn(&mut self) -> Entity {
+#        let entity = Entity(self.next_id);
+#        if self.next_id == u64::MAX {
+#            panic!("Attempted to spawn an entity after running out of IDs");
+#        }
+#        self.next_id += 1;
+#        entity
+#    }
+    // -Snip
+
+    fn despawn(&mut self, entity: Entity) {
+        if self.is_alive(entity) {
+            self.dead_entities.insert(entity);
+        }
+    }
+
+    fn is_alive(&self, entity: Entity) -> bool {
+        // self.next_id is the ID for the next entity so any entities with 
+        // that ID or higher haven't been spawned yet
+        if entity.0 >= self.next_id {
+            panic!("Attempted to use an entity in an EntityGenerator that it was not spawned with");
+        }
+        self.dead_entities.contains(&entity) == false
+    }
+}
+
+# #[allow(unreachable_code)]
+fn main() {
+    use std::collections::HashSet;
+    let mut gen_1 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
+    let mut gen_2 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
+
+    let e1_1 = gen_1.spawn();
+    assert!(gen_2.is_alive(e1_1) == false);
+    gen_2.despawn(e1_1);
+    let e1_2 = gen_2.spawn();
+    assert!(gen_2.is_alive(e1_2) == unreachable!());
+}
+```
+
+I decided to ``panic`` in the ``is_alive`` method rather than ``return false`` because its pretty safe to say that it would be unintentional to do this so we should fail loudly to bring attention to it. It would also be completely fine to ``return false`` if you're opposed to panic'ing in libraries unnecessarily :)
+
+To wrap this chapter up lets move all this code into a separate module, reexport the entity struct and then set everything to pub(crate) since we'll likely need this all elsewhere.
+
+
+```rust, noplaypen
+// /src/entities.rs
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct Entity(u64);
+
+pub(crate) struct EntityGenerator {
+    next_id: u64,
+    dead_entities: std::collections::HashSet<Entity>,
+}
+
+impl EntityGenerator {
+    pub(crate) fn spawn(&mut self) -> Entity {
+        let entity = Entity(self.next_id);
+        if self.next_id == u64::MAX {
+            panic!("Attempted to spawn an entity after running out of IDs");
+        }
+        self.next_id += 1;
+        entity
+    }
+
+    pub(crate) fn despawn(&mut self, entity: Entity) {
+        if self.is_alive(entity) {
+            self.dead_entities.insert(entity);
+        }
+    }
+
+    pub(crate) fn is_alive(&self, entity: Entity) -> bool {
+        // self.next_id is the ID for the next entity so any entities with
+        // that ID or higher haven't been spawned yet
+        if entity.0 >= self.next_id {
+            panic!("Attempted to use an entity in an EntityGenerator that it was not spawned with");
+        }
+        self.dead_entities.contains(&entity) == false
+    }
+}
+```
+```rust, noplaypen
+// /src/lib.rs
+#![forbid(unsafe_code)]
+pub(crate) mod entities;
+pub use entities::Entity;
+```
