@@ -116,9 +116,9 @@ fn add_T4_to_entity_in_A_123(&mut self, entity: Entity, data: T4) {
 }
 ```
 
-Aaaaaaaaand yep... we have to move all of the components out of the columns in ``A_123``. We then have to 
-push the removed component to our new archetype's columns. That's a lot of moving memory which isn't the 
-fastest thing in the world- to say the least
+Aaaaaaaaand yep... we have to move each of the entity's components out of their columns in ``A_123``. 
+Then have to push the removed components to the respective columns in the other archetype (``A_1234``). That's a lot of 
+moving around memory which isn't the fastest thing in the world- to say the least
 
 There's not a whole lot we can do about this. The need to move all this memory around when adding/removing components is
 entirely necessary for the previously mentioned amazing iteration performance. Archetype ECS' are inherently about trading in 
@@ -127,3 +127,5 @@ add/remove performance in exchange for iteration performance.
 There are others ways to model your ECS such as sparsesets which have signficantly better add/remove performance
 in exchange for worse iteration performance relative to archetype based ECS' (still fast though :P). There's no one 
 best way to model an ECS, sparseset and archetype ECS' just make different tradeoffs :)
+
+In the [next part](./archetype-struct.md) we'll actually create our ``Archetype`` struct 
