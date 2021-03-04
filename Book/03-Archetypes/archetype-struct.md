@@ -1,8 +1,7 @@
 # Creating our struct
 
-Before we get started let's quickly make an `archetype` module. In our `src/lib.rs` file 
-we should add `mod archetype;` and then make a file at `src/archetype.rs`. All of the code
-in this chapter will be inside of this `archetype.rs` file :)
+Before we get started, in our `src/lib.rs` file we should add `mod archetype;` and then make a 
+file at `src/archetype.rs`. All of the code in this chapter will be inside of this `archetype.rs` file
 
 Our archetype struct needs to be able to store any number of component columns. The
 way to do this normally would be a `Vec<ComponentColumn>` however our component columns
@@ -278,3 +277,5 @@ mod tests {
 {{#include ./code/src/archetype.rs:columns_builder_tests}}
 }
 ```
+
+The full source code for this chapter can be viewed [here](https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/03-Archetypes/code)

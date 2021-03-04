@@ -292,6 +292,6 @@ pub(crate) mod entities;
 pub use entities::Entity;
 ```
 
-The full source code for this chapter can be viewed [here](https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/Entities/src)
+The full source code for this chapter can be viewed [here](https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/02-Entities/code)
 
 Now that we have entity spawning and despawning working it's about time to start storing some components, for that we need to learn about what archetypes are. Luckily that's exactly what the next chapter is for!
