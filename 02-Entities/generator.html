@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../Entities/generator.html" class="active"><strong aria-hidden="true">2.</strong> A basic entity generator</a></li><li class="chapter-item expanded "><a href="../archetype-explanation.html"><strong aria-hidden="true">3.</strong> What are archetypes?</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction/introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-Entities/generator.html" class="active"><strong aria-hidden="true">2.</strong> A basic entity generator</a></li><li class="chapter-item expanded "><a href="../03-Archetypes/summary.html"><strong aria-hidden="true">3.</strong> Archetypes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../03-Archetypes/archetype-explanation.html"><strong aria-hidden="true">3.1.</strong> What are archetypes?</a></li><li class="chapter-item expanded "><a href="../03-Archetypes/archetype-struct.html"><strong aria-hidden="true">3.2.</strong> Creating our struct</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,7 +163,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#a-basic-entity-generator" id="a-basic-entity-generator">A basic entity generator</a></h1>
+                        <h1 id="a-basic-entity-generator"><a class="header" href="#a-basic-entity-generator">A basic entity generator</a></h1>
 <p>Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and by starting here we can make progress without tackling some of the harder stuff immediately :)</p>
 <p>Every ECS that has performance as a goal will not store data *in* their Entity struct but 
 will instead have the Entity be a handle to component data. This is because when we ask 
@@ -274,7 +274,7 @@ ram consumption with this you could use a bitset instead which would have 1/8th 
 <li>A <code>HashSet&lt;Entity&gt;</code> and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive</li>
 </ul>
 <p>Option #2 and #3 would both be valid choices but for this guide I'm going to go with the HashSet option because its simpler :) Option #2 should work well as a drop-in replacement for the hashset code though so feel free to do that on your own! :)</p>
-<h1><a class="header" href="#the-hashset-method" id="the-hashset-method">The Hashset method</a></h1>
+<h1 id="the-hashset-method"><a class="header" href="#the-hashset-method">The Hashset method</a></h1>
 <p>The code here will likely speak for itself so I'll just show it-</p>
 <pre><code class="language-rust noplaypen">struct EntityGenerator {
     next_id: u64,
@@ -436,13 +436,13 @@ pub use entities::Entity;
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../01-introduction/introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../archetype-explanation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../03-Archetypes/summary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -454,13 +454,13 @@ pub use entities::Entity;
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../01-introduction/introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../archetype-explanation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../03-Archetypes/summary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

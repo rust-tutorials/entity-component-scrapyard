@@ -3,9 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>entity-component-scrapyard</title>
-        
-        <meta name="robots" content="noindex" />
+        <title>Creating our struct - entity-component-scrapyard</title>
         
         
 
@@ -20,28 +18,28 @@
         <meta name="theme-color" content="#ffffff" />
 
         
-        <link rel="icon" href="favicon.svg">
+        <link rel="icon" href="../favicon.svg">
         
         
-        <link rel="shortcut icon" href="favicon.png">
+        <link rel="shortcut icon" href="../favicon.png">
         
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
         
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="stylesheet" href="../css/print.css" media="print">
         
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
         
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         
@@ -51,7 +49,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -97,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction/introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-Entities/generator.html"><strong aria-hidden="true">2.</strong> A basic entity generator</a></li><li class="chapter-item expanded "><a href="03-Archetypes/summary.html"><strong aria-hidden="true">3.</strong> Archetypes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="03-Archetypes/archetype-explanation.html"><strong aria-hidden="true">3.1.</strong> What are archetypes?</a></li><li class="chapter-item expanded "><a href="03-Archetypes/archetype-struct.html"><strong aria-hidden="true">3.2.</strong> Creating our struct</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction/introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-Entities/generator.html"><strong aria-hidden="true">2.</strong> A basic entity generator</a></li><li class="chapter-item expanded "><a href="../03-Archetypes/summary.html"><strong aria-hidden="true">3.</strong> Archetypes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../03-Archetypes/archetype-explanation.html"><strong aria-hidden="true">3.1.</strong> What are archetypes?</a></li><li class="chapter-item expanded "><a href="../03-Archetypes/archetype-struct.html" class="active"><strong aria-hidden="true">3.2.</strong> Creating our struct</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -133,7 +131,7 @@
 
                     <div class="right-buttons">
                         
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         
@@ -165,397 +163,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="entity-component-scrapyard-introduction"><a class="header" href="#entity-component-scrapyard-introduction">Entity Component Scrapyard: Introduction</a></h1>
-<p>Hiiii person reading this. </p>
-<p>EC-Scrapyard is a tutorial walkthrough thingy where we're going to write an ECS from scratch :3</p>
-<p>This book is written with the assumption that the reader knows what an ECS is but not necessarily how it works or how to go about writing one. If
-you dont know what an ECS is there's a good writeup <a href="https://www.google.com">here</a></p>
-<p>A few caveats before we start:</p>
-<ul>
-<li>We wont be using any dependencies, we will be using rust's standard library though :&quot;)</li>
-<li>We will only use safe code so <code>#![forbid(unsafe_code)]</code> will be placed at the top of <code>lib.rs</code></li>
-<li>We wont touch on the Systems part of ECS because I personally feel that's better left to engines and users of the ECS to decide how best to structure the program</li>
-</ul>
-<p>A lot of the ECS' in the rust ecosystem use something called 'archetypes' so we'll be writing an archetype based ECS in this book. If you dont know what archetypes are don't worry they'll be explained later on in the book when we get around to implementing them :) If you're impatient and want to look at it now you can go ahead and do that :P <a href="01-introduction/./archetype-explanation">the section for that is here</a></p>
-<h1 id="a-basic-entity-generator"><a class="header" href="#a-basic-entity-generator">A basic entity generator</a></h1>
-<p>Lets start with implementing a basic struct that will let us spawn and despawn entities. Every ECS has something like this and by starting here we can make progress without tackling some of the harder stuff immediately :)</p>
-<p>Every ECS that has performance as a goal will not store data *in* their Entity struct but 
-will instead have the Entity be a handle to component data. This is because when we ask 
-the ECS for all components <code>T1</code> and <code>T2</code> if they're stored in the Entity struct they'll 
-never be in cache when we go to access them. (This also has many borrowck issues, maybe for another book though :&gt;)
-Whereas if we store a bunch of our <code>T1</code> components in a Vec, when we iterate through it 
-we'll end up having the next components loaded into cache which is far more efficient.</p>
-<p>A simple way to implement this &quot;Entity as a handle&quot; thing would be to create a tuple struct that wraps a u32 or u64 or whatever size integer you want e.g.</p>
-<pre><code class="language-rust noplaypen">pub struct Entity(u64);
-</code></pre>
-<p>we could then add some derives</p>
-<pre><code class="language-rust noplaypen">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Entity(u64);
-</code></pre>
-<p>This would work pretty well, entities would be cheap to copy, compare with eachother, 
-and they're relatively small in size which is good because we'll have a *lot* of 
-entities in our ECS. Sequential ids hopefully will also make the code for generating new 
-ids not super complex, we just add 1 to a counter.<br />
-The first entity we spawn is <code>Entity(0)</code> the second is <code>Entity(1)</code> the third <code>Entity(2)</code> etc etc etc</p>
-<p>Well, lets try write up this entity spawning code and see if it ends up with any suprise complexity.
-Lets start by making a struct with that counter and our spawn method that increments it</p>
-<pre><code class="language-rust noplaypen">struct EntityGenerator {
-    next_id: u64,
-}
-
-impl EntityGenerator {
-    fn spawn(&amp;mut self) -&gt; Entity {
-        let entity = Entity(self.next_id);
-        self.next_id += 1;
-        entity
-    }
-}
-</code></pre>
-<p>Okay well thats not a lot of code although how exactly does <code>self.next_id += 1</code> handle 
-the case where <code>self.next_id == u64::MAX</code> we're unlikely to ever have this many 
-entities but we probably ought to atleast see what will happen...</p>
-<p>(click the run button :3)</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl EntityGenerator {
-</span><span class="boring">   fn spawn(&amp;mut self) -&gt; Entity {
-</span><span class="boring">       let entity = Entity(self.next_id);
-</span><span class="boring">       self.next_id += 1;
-</span><span class="boring">       entity
-</span><span class="boring">   }
-</span><span class="boring">}
-</span><span class="boring">
-</span>let mut entity_generator = EntityGenerator { next_id: u64::MAX };
-let entity = entity_generator.spawn();
-dbg!(entity);
-<span class="boring">}
-</span></code></pre></pre>
-<p>Oh, well that's not great...</p>
-<p>We could explicitly use <code>wrapping_add</code> to avoid this panic, but then two calls to 
-<code>EntityGenerator::spawn</code> could return the same entity and that's definitely undesirable. 
-<code>u64::MAX</code> is a *really* big number so whether we panic or use <code>wrapping_add</code> is unlikely to make much of a difference.<br />
-For this guide I'm just going to panic but if you want to wrapping_add that's also fine :)<br />
-Note: overflow only panics in debug mode so if we want to panic on overflow we need to explicitly check for it</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">
-</span>impl EntityGenerator {
-    fn spawn(&amp;mut self) -&gt; Entity {
-        let entity = Entity(self.next_id);
-        if self.next_id == u64::MAX {
-            panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-        }
-        self.next_id += 1;
-        entity
-    }
-}
-
-fn main() {
-    let mut entity_generator = EntityGenerator { next_id: u64::MAX };
-    let entity = entity_generator.spawn();
-    dbg!(entity);
-}
-</code></pre></pre>
-<p>If we run this hopefully we panic with our new error message... </p>
-<pre><code>thread 'main' panicked at 'Attempted to spawn an entity after running out of IDs'
-</code></pre>
-<p>Yep!</p>
-<p>Okay the next thing we want to do is mark entities as dead, that's a pretty core thing for our ECS huh :P?<br />
-We'll want a <code>despawn</code> function but how is this function even going to work? We cant store the 
-dead/alive status on the Entity itself because we can copy an entity before it's despawned and then 
-it would still think it's alive.<br />
-We need to store all the despawned status of entities in our <code>EntityGenerator</code></p>
-<p>There are a few options for this</p>
-<ul>
-<li>A <code>Vec&lt;Entity&gt;</code> where we push dead entities to it, we would have to iterate the entire vec to 
-check if an entity is dead which could be *super* slow so this is a non-starter.</li>
-<li>A <code>Vec&lt;bool&gt;</code> which we index with the entity's u64 and set to true when we despawn the entity. 
-This would be super fast to check if an entity is dead/alive, if you're concerned about 
-ram consumption with this you could use a bitset instead which would have 1/8th the usage of <code>Vec&lt;bool&gt;</code></li>
-<li>A <code>HashSet&lt;Entity&gt;</code> and we just insert dead entities into it. This would also be pretty fast to check if an entity is dead/alive</li>
-</ul>
-<p>Option #2 and #3 would both be valid choices but for this guide I'm going to go with the HashSet option because its simpler :) Option #2 should work well as a drop-in replacement for the hashset code though so feel free to do that on your own! :)</p>
-<h1 id="the-hashset-method"><a class="header" href="#the-hashset-method">The Hashset method</a></h1>
-<p>The code here will likely speak for itself so I'll just show it-</p>
-<pre><code class="language-rust noplaypen">struct EntityGenerator {
-    next_id: u64,
-    // New
-    dead_entities: std::collections::HashSet&lt;Entity&gt;,
-}
-
-impl EntityGenerator {
-    // -Snip
-
-    fn despawn(&amp;mut self, entity: Entity) {
-        self.dead_entities.insert(entity);
-    }
-
-    fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-<span class="boring">        I like my ``== false`` okay
-</span>        self.dead_entities.contains(&amp;entity) == false
-    }
-}
-</code></pre>
-<p>At first glance this seems pretty correct right? but it isn't ^^&quot; there's an implicit assumption in this code that 
-we only ever receive entities that were spawned from this <code>EntityGenerator</code> but we can just ignore that and cause
-the generator to spawn a dead entity like so:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">   dead_entities: std::collections::HashSet&lt;Entity&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl EntityGenerator {
-</span><span class="boring">   fn spawn(&amp;mut self) -&gt; Entity {
-</span><span class="boring">       let entity = Entity(self.next_id);
-</span><span class="boring">       if self.next_id == u64::MAX {
-</span><span class="boring">           panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-</span><span class="boring">       }
-</span><span class="boring">       self.next_id += 1;
-</span><span class="boring">       entity
-</span><span class="boring">   }
-</span><span class="boring">
-</span><span class="boring">   fn despawn(&amp;mut self, entity: Entity) {
-</span><span class="boring">       self.dead_entities.insert(entity);
-</span><span class="boring">   }
-</span><span class="boring">
-</span><span class="boring">   fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-</span><span class="boring">       self.dead_entities.contains(&amp;entity) == false
-</span><span class="boring">   }
-</span><span class="boring">}
-</span><span class="boring">
-</span>fn main() {
-    use std::collections::HashSet;
-    let mut gen_1 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
-    let mut gen_2 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
-
-    let e1_1 = gen_1.spawn();
-    gen_2.despawn(e1_1);
-    let e1_2 = gen_2.spawn();
-    assert!(gen_2.is_alive(e1_2));
-}
-</code></pre></pre>
-<p>This is pretty problematic to say the least :P We can spawn entities with other generators, despawn them, and then spawn a dead entity. Looking back over our code with this in mind we can also see that if we call <code>is_alive</code> on an unspawned entity it would say yes... Soooooo how can we check for this?<br />
-We could store another Hashet for every spawned entity but that would be really slow and waste memory, what's better is that we can compare <code>self.next_id</code> to the entity's <code>u64</code> to see if its indistinguishable from an entity spawned from this generator e.g.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-</span><span class="boring">pub struct Entity(u64);
-</span><span class="boring">
-</span><span class="boring">struct EntityGenerator {
-</span><span class="boring">   next_id: u64,
-</span><span class="boring">   dead_entities: std::collections::HashSet&lt;Entity&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span>impl EntityGenerator {
-<span class="boring">   fn spawn(&amp;mut self) -&gt; Entity {
-</span><span class="boring">       let entity = Entity(self.next_id);
-</span><span class="boring">       if self.next_id == u64::MAX {
-</span><span class="boring">           panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-</span><span class="boring">       }
-</span><span class="boring">       self.next_id += 1;
-</span><span class="boring">       entity
-</span><span class="boring">   }
-</span>    // -Snip
-
-    fn despawn(&amp;mut self, entity: Entity) {
-        if self.is_alive(entity) {
-            self.dead_entities.insert(entity);
-        }
-    }
-
-    fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-        // self.next_id is the ID for the next entity so any entities with 
-        // that ID or higher haven't been spawned yet
-        if entity.0 &gt;= self.next_id {
-            panic!(&quot;Attempted to use an entity in an EntityGenerator that it was not spawned with&quot;);
-        }
-        self.dead_entities.contains(&amp;entity) == false
-    }
-}
-
-<span class="boring">#[allow(unreachable_code)]
-</span>fn main() {
-    use std::collections::HashSet;
-    let mut gen_1 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
-    let mut gen_2 = EntityGenerator { next_id: 0, dead_entities: HashSet::new() };
-
-    let e1_1 = gen_1.spawn();
-    assert!(gen_2.is_alive(e1_1) == false);
-    gen_2.despawn(e1_1);
-    let e1_2 = gen_2.spawn();
-    assert!(gen_2.is_alive(e1_2) == unreachable!());
-}
-</code></pre></pre>
-<p>I decided to <code>panic</code> in the <code>is_alive</code> method rather than <code>return false</code> because its pretty safe to say that it would be unintentional to do this so we should fail loudly to bring attention to it. It would also be completely fine to <code>return false</code> if you're opposed to panic'ing in libraries unnecessarily :)</p>
-<p>To wrap this chapter up lets move all this code into a separate module, reexport the entity struct and then set everything to pub(crate) since we'll likely need this all elsewhere.</p>
-<pre><code class="language-rust noplaypen">// /src/entities.rs
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Entity(u64);
-
-pub(crate) struct EntityGenerator {
-    next_id: u64,
-    dead_entities: std::collections::HashSet&lt;Entity&gt;,
-}
-
-impl EntityGenerator {
-    pub(crate) fn spawn(&amp;mut self) -&gt; Entity {
-        let entity = Entity(self.next_id);
-        if self.next_id == u64::MAX {
-            panic!(&quot;Attempted to spawn an entity after running out of IDs&quot;);
-        }
-        self.next_id += 1;
-        entity
-    }
-
-    pub(crate) fn despawn(&amp;mut self, entity: Entity) {
-        if self.is_alive(entity) {
-            self.dead_entities.insert(entity);
-        }
-    }
-
-    pub(crate) fn is_alive(&amp;self, entity: Entity) -&gt; bool {
-        // self.next_id is the ID for the next entity so any entities with
-        // that ID or higher haven't been spawned yet
-        if entity.0 &gt;= self.next_id {
-            panic!(&quot;Attempted to use an entity in an EntityGenerator that it was not spawned with&quot;);
-        }
-        self.dead_entities.contains(&amp;entity) == false
-    }
-}
-</code></pre>
-<pre><code class="language-rust noplaypen">// /src/lib.rs
-#![forbid(unsafe_code)]
-pub(crate) mod entities;
-pub use entities::Entity;
-</code></pre>
-<p>The full source code for this chapter can be viewed <a href="https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/Entities/src">here</a></p>
-<p>Now that we have entity spawning and despawning working it's about time to start storing some components, for that we need to learn about what archetypes are. Luckily that's exactly what the next chapter is for!</p>
-<h1 id="what-are-archetypes"><a class="header" href="#what-are-archetypes">What are archetypes?</a></h1>
-<p>Archetypes are the underlying storage method we will be using to store components in our ECS. In 
-our ECS we will use something like <code>Vec&lt;Archetype&gt;</code> to store everything.<br />
-An archetype stores *all* of the components on an entity and also only stores components from entities 
-with the same set of components. E.G. an entity with *only* <code>[T1, T2, T3]</code> components would
-have all components stored in one archetype, and an entity with *only* <code>[T1, T2, T3, T4]</code> 
-components would have all the components stored in a different archetype.</p>
-<p>Let's say we have an archetype, we'll call it <code>A_123</code>. <code>A_123</code> is storing 
-components for entities that only have components <code>[T1, T2, T3]</code>.<br />
-When we spawn an entity like so:</p>
-<pre><code class="language-rust noplaypen">world.spawn((
-  T1 { .. },
-  T2 { .. },
-  T3 { .. },
-));
-</code></pre>
-<p>We need to find an archetype to place all these components into. As mentioned previously we want to find if there's
-an archetype that only stores components for entities with <code>[T1, T2, T3]</code>, and, luckily for us, there is! It's <code>A_123</code>.</p>
-<p>Let's take a quick look at what <code>A_123</code> might look like internally and how we would go about placing these components into it.<br />
-In psuedocode we have some archetype struct that looks a bit like:</p>
-<pre><code class="language-rust noplaypen">struct A_123 {
-  column_1: Vec&lt;T1&gt;,
-  column_2: Vec&lt;T2&gt;,
-  column_3: Vec&lt;T3&gt;,
-}
-</code></pre>
-<p>You might be wondering why we store each component type in a separate vec rather than something like this:</p>
-<pre><code class="language-rust noplaypen">struct A_123(Vec&lt;(T1, T2, T3)&gt;);
-</code></pre>
-<p>There are a few reasons for this,</p>
-<ul>
-<li>The borrow checker will get angry at us if we have two Query's where one wants to access components <code>T1</code> mutably and
-the other wants to access <code>T2</code> immutably (We cant create an iterator over only *parts* of the (T1, T2, T3) tuple afterall)</li>
-<li>It's more performant to store the components in separate Vecs as when we iterate only <code>T1</code> we dont needlessly load 
-the <code>T2</code> and <code>T3</code> components into the cpu's cache.</li>
-</ul>
-<p>With that explained lets look at some psuedocode for that <code>spawn</code> function we used earlier.</p>
-<pre><code class="language-rust noplaypen">fn spawn(&amp;mut self, data: (T1, T2, T3)) -&gt; Entity {
-  let a_123 = /* magically get the A_123 archetype */;
-
-  let entity = self.entity_generator.spawn();
-  a_123.entities.push(entity);
-
-  a_123.column_1.push(data.0);
-  a_123.column_2.push(data.1);
-  a_123.column_3.push(data.2);
-
-  entity
-}
-</code></pre>
-<p>...Huh interesting how all this psuedocode looks awfully like Rust... I'm sure its just a coincedence ;)</p>
-<p>There are a few things to talk about the above code:</p>
-<ul>
-<li>What's this <code>entities</code> field that suddenly appeared?</li>
-<li>Do we need to store any kind of metadata so that we know which entity every element
-in each of the component vecs corresponds to?</li>
-</ul>
-<p>Both of these things are *actually* one and the same.<br />
-Because we store entities with *only* components <code>[T1, T2, T3]</code> in this archetype, the component 
-vecs will always be the same length. This means that when we push components to the front of the vecs 
-they'll all end up at the same index.</p>
-<p>What we can do with this knowledge is have have a <code>Vec&lt;Entity&gt;</code> in the archetype and 
-push the spawned <code>Entity</code> to the entities vec. We then have an implicit mapping where for every index in 
-the component columns we can access the <code>entities</code> vec at the same index to check what entity this component is for. 
-It's for the same reason that we can also access the other component columns at this index and the component will be for
-the same entity.</p>
-<p>That last point is why Query's in archetype based ECS' are *so* fast. When we want to iterate all <code>T1</code> and <code>T2</code> components
-in our world we can just find every archetype that has a column for <code>T1</code> and also a column for <code>T2</code> and then blindly iterate
-both Vecs at the same time. Some psuedocode to hopefully help demonstrate what I mean:</p>
-<pre><code class="language-rust noplaypen">fn iterate_T1_and_T2(archetype: &amp;A_123) -&gt; impl Iterator&lt;Item = (&amp;T1, &amp;T2)&gt; {
-  archetype.column_1.iter().zip(archetype.column_2.iter())
-}
-</code></pre>
-<p>Now that you (hopefully) have an understanding of how components get stored in archetype based ECS' and the performance
-advantages we can get from it, it's time to talk about one of the biggest flaws of the archetype model. Adding/Removing components
-is *really* slow.. like.. **really** slow.</p>
-<p>Let's continue with our previous example of spawning our entity with components <code>[T1, T2, T3]</code>. It's sitting pretty comfortably in
-our <code>A_123</code> archetype and we'll have super fast iteration times if we add more entities to this archetype and query for their components.</p>
-<p>Now lets try adding a component to our entity. As previously mentioned our <code>A_123</code> archetype stores entities which *only* have 
-<code>[T1, T2, T3]</code> components as this lets us have amazing iteration speeds. Now let's say we add a component <code>T4</code> to out entity, 
-we would no longer fit this criteria which means we cant store our entity's components in <code>A_123</code>, we'll have to make a second archetype- 
-<code>A_1234</code> it will store components for entities who only have <code>[T1, T2, T3, T4]</code></p>
-<p>Lets write some quick psuedocode and see if the performance problem here speaks for itself:</p>
-<pre><code class="language-rust noplaypen">fn add_T4_to_entity_in_A_123(&amp;mut self, entity: Entity, data: T4) {
-  let a_123 = /* magically get the A_123 archetype */;
-  let index = /* magically get the index in the 
-  component columns corresponding to the entity */;
-
-  let a_1234 = /* magically get the A_1234 archetype */;
-
-  a_1234.entities.push(entity);
-  a_1234.column_4.push(data);
-
-  // Oh no this doesnt look cheap at all
-  a_1234.column_1.push(a_123.column_1.remove(index));
-  a_1234.column_2.push(a_123.column_2.remove(index));
-  a_1234.column_3.push(a_123.column_3.remove(index));
-
-  self.archetypes.push(a_1234);
-}
-</code></pre>
-<p>Aaaaaaaaand yep... we have to move each of the entity's components out of their columns in <code>A_123</code>. 
-Then have to push the removed components to the respective columns in the other archetype (<code>A_1234</code>). That's a lot of 
-moving around memory which isn't the fastest thing in the world- to say the least</p>
-<p>There's not a whole lot we can do about this. The need to move all this memory around when adding/removing components is
-entirely necessary for the previously mentioned amazing iteration performance. Archetype ECS' are inherently about trading in 
-add/remove performance in exchange for iteration performance. </p>
-<p>There are others ways to model your ECS such as sparsesets which have signficantly better add/remove performance
-in exchange for worse iteration performance relative to archetype based ECS' (still fast though :P). There's no one 
-best way to model an ECS, sparseset and archetype ECS' just make different tradeoffs :)</p>
-<p>In the <a href="03-Archetypes/./archetype-struct.html">next part</a> we'll actually create our <code>Archetype</code> struct </p>
-<h1 id="creating-our-struct"><a class="header" href="#creating-our-struct">Creating our struct</a></h1>
+                        <h1 id="creating-our-struct"><a class="header" href="#creating-our-struct">Creating our struct</a></h1>
 <p>Before we get started let's quickly make an <code>archetype</code> module. In our <code>src/lib.rs</code> file 
 we should add <code>mod archetype;</code> and then make a file at <code>src/archetype.rs</code>. All of the code
 in this chapter will be inside of this <code>archetype.rs</code> file :)</p>
@@ -1272,6 +880,10 @@ mod tests {
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="../03-Archetypes/archetype-explanation.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
 
@@ -1281,6 +893,10 @@ mod tests {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../03-Archetypes/archetype-explanation.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
                 
 
                 
@@ -1303,26 +919,18 @@ mod tests {
         
 
         
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
         
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
         
 
-        
-        
-        <script type="text/javascript">
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
-        
         
 
     </body>
