@@ -34,7 +34,7 @@ impl Archetype {
 
         assert!(columns
             .iter()
-            .position(|column| column.as_any().is::<Vec<T>>())
+            .find(|column| column.as_any().is::<Vec<T>>())
             .is_none());
         columns.push(Box::new(Vec::<T>::new()));
 
@@ -82,8 +82,7 @@ impl ColumnsBuilder {
         if let Some(_) = self
             .0
             .iter()
-            .filter(|col| col.as_any().type_id() == std::any::TypeId::of::<Vec<T>>())
-            .next()
+            .find(|col| col.as_any().type_id() == std::any::TypeId::of::<Vec<T>>())
         {
             panic!("Attempted to create invalid archetype");
         }
