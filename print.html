@@ -442,7 +442,7 @@ impl EntityGenerator {
 pub(crate) mod entities;
 pub use entities::Entity;
 </code></pre>
-<p>The full source code for this chapter can be viewed <a href="https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/Entities/src">here</a></p>
+<p>The full source code for this chapter can be viewed <a href="https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/02-Entities/code">here</a></p>
 <p>Now that we have entity spawning and despawning working it's about time to start storing some components, for that we need to learn about what archetypes are. Luckily that's exactly what the next chapter is for!</p>
 <h1 id="what-are-archetypes"><a class="header" href="#what-are-archetypes">What are archetypes?</a></h1>
 <p>Archetypes are the underlying storage method we will be using to store components in our ECS. In 
@@ -556,9 +556,8 @@ in exchange for worse iteration performance relative to archetype based ECS' (st
 best way to model an ECS, sparseset and archetype ECS' just make different tradeoffs :)</p>
 <p>In the <a href="03-Archetypes/./archetype-struct.html">next part</a> we'll actually create our <code>Archetype</code> struct </p>
 <h1 id="creating-our-struct"><a class="header" href="#creating-our-struct">Creating our struct</a></h1>
-<p>Before we get started let's quickly make an <code>archetype</code> module. In our <code>src/lib.rs</code> file 
-we should add <code>mod archetype;</code> and then make a file at <code>src/archetype.rs</code>. All of the code
-in this chapter will be inside of this <code>archetype.rs</code> file :)</p>
+<p>Before we get started, in our <code>src/lib.rs</code> file we should add <code>mod archetype;</code> and then make a 
+file at <code>src/archetype.rs</code>. All of the code in this chapter will be inside of this <code>archetype.rs</code> file</p>
 <p>Our archetype struct needs to be able to store any number of component columns. The
 way to do this normally would be a <code>Vec&lt;ComponentColumn&gt;</code> however our component columns
 are going to be Vec's which are generic over the type they store. This is a bit problematic
@@ -1266,6 +1265,7 @@ mod tests {
 }
 <span class="boring">}
 </span></code></pre></pre>
+<p>The full source code for this chapter can be viewed <a href="https://github.com/rust-tutorials/entity-component-scrapyard/tree/main/Book/03-Archetypes/code">here</a></p>
 
                     </main>
 
